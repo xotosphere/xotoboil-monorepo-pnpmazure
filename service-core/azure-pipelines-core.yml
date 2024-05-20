@@ -1,0 +1,34 @@
+    steps:
+      - checkout: self
+        persistCredentials: true
+      
+      # install pnpm
+        
+      - script: |
+          curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm@8
+          pnpm config set store-dir $(pnpm_config_cache)
+        displayName: 'Setup pnpm'
+        workingDirectory: $(service-dir)
+        condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+        
+      # install all pnpm dependencies 
+        
+      - script: |
+          pnpm install
+        displayName: 'Install dependencies'
+        workingDirectory: $(service-dir)
+        condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+     
+      # match azure pr to commit lint 
+     
+      - script: |
+          pr_title="$(curl --silent -u azdo:$SYSTEM_ACCESSTOKEN \
+          $(System.CollectionUri)_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)?api-version=5.1 \
+          | jq -r .title)"
+          echo "$pr_title" | pnpm commitlint --config="./.commitlintrc.cjs"
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        displayName: 'Run Commitlint'
+        workingDirectory: $(service-dir)
+        condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+

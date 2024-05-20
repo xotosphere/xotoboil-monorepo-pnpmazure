@@ -1,0 +1,14 @@
+# top level 
+
+variables:
+  - name: service-dir
+    value: 'service-core/'
+    
+pool:
+  vmImage: 'ubuntu-latest'
+  
+jobs:
+  - job: template
+    displayName: 'Template'
+    steps:
+      - template: 'service-core/azure-pipelines-core.yml' 
